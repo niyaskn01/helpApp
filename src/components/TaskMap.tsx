@@ -49,16 +49,35 @@ export default function TaskMap({
   onChangeRef.current = onChange;
   const [error, setError] = useState<string | null>(null);
 
+  const [ready, setReady] = useState(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  function syncMarkerToValue(v: Coords | null) {
+    const map = mapRef.current;
+    const marker = markerRef.current;
+    if (!map || !marker) return;
+    if (v) {
+      marker.setPosition(v);
+      map.panTo(v);
+      if (map.getZoom() < 15) map.setZoom(16);
+      if (containerRef.current) {
+        containerRef.current.dataset["markerLat"] = String(v.lat);
+        containerRef.current.dataset["markerLng"] = String(v.lng);
+      }
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     loadMaps()
       .then(() => {
         if (cancelled || !containerRef.current || mapRef.current) return;
-        const center = value ?? { lat: 10.0159, lng: 76.3419 }; // Kakkanad, Kochi
+        const center = valueRef.current ?? { lat: 10.0159, lng: 76.3419 }; // Kakkanad, Kochi
         const map = new window.google.maps.Map(containerRef.current, {
           center,
-          zoom: value ? 16 : 13,
+          zoom: valueRef.current ? 16 : 13,
           disableDefaultUI: true,
           zoomControl: true,
           clickableIcons: false,
@@ -79,6 +98,7 @@ export default function TaskMap({
         });
         mapRef.current = map;
         markerRef.current = marker;
+        setReady(true);
       })
       .catch(() => {
         if (!cancelled) setError("Map could not be loaded. Try again in a moment.");
@@ -90,12 +110,13 @@ export default function TaskMap({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Move the pin whenever the selected coords change — or once the map
+  // finishes loading if coords were already set before it was ready.
   useEffect(() => {
-    if (!value || !mapRef.current || !markerRef.current) return;
-    markerRef.current.setPosition(value);
-    mapRef.current.panTo(value);
-    if (mapRef.current.getZoom() < 15) mapRef.current.setZoom(16);
-  }, [value]);
+    if (!ready) return;
+    syncMarkerToValue(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, ready]);
 
   if (error) {
     return (

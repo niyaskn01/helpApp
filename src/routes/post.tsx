@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import TaskMap from "@/components/TaskMap";
-import { reverseGeocode, submitTask } from "@/lib/tasks.functions";
+import { autocompleteLocation, placeDetails, reverseGeocode, searchLocation, submitTask } from "@/lib/tasks.functions";
 
 export const Route = createFileRoute("/post")({
   head: () => ({
@@ -54,6 +54,7 @@ function whenLabel(w: WhenNeeded) {
 function PostTaskPage() {
   const navigate = useNavigate();
   const geocode = useServerFn(reverseGeocode);
+  const searchPlaces = useServerFn(searchLocation);
   const post = useServerFn(submitTask);
 
   const [step, setStep] = useState<Step>("form");
@@ -71,6 +72,66 @@ function PostTaskPage() {
   const [helpers, setHelpers] = useState<number>(1);
   const [whenNeeded, setWhenNeeded] = useState<WhenNeeded>("asap");
   const [scheduledFor, setScheduledFor] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<
+    { formattedAddress: string; latitude: number; longitude: number }[]
+  >([]);
+  const suggest = useServerFn(autocompleteLocation);
+  const getPlace = useServerFn(placeDetails);
+  const [suggestions, setSuggestions] = useState<
+    { placeId: string; primary: string; secondary: string; description: string }[]
+  >([]);
+  const [suggestOpen, setSuggestOpen] = useState(false);
+  const justPickedRef = useRef(false);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (justPickedRef.current) {
+      justPickedRef.current = false;
+      return;
+    }
+    if (q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void suggest({ data: { query: q } })
+        .then((res) => {
+          if (cancelled) return;
+          setSuggestions(res.suggestions);
+          setSuggestOpen(true);
+        })
+        .catch(() => {
+          if (!cancelled) setSuggestions([]);
+        });
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, suggest]);
+
+  async function pickSuggestion(s: { placeId: string; description: string }) {
+    justPickedRef.current = true;
+    setSuggestOpen(false);
+    setSuggestions([]);
+    setSearchQuery(s.description);
+    setAddress("Finding address…");
+    try {
+      const res = await getPlace({ data: { placeId: s.placeId } });
+      if (!res.place) {
+        toast.error(res.error ?? "Could not load that place.");
+        setAddress("");
+        return;
+      }
+      pickResult(res.place);
+    } catch {
+      toast.error("Could not load that place.");
+      setAddress("");
+    }
+  }
 
   async function resolveAddress(next: Coords) {
     setCoords(next);
@@ -79,6 +140,45 @@ function PostTaskPage() {
     setAddress(res.formattedAddress || `${next.lat.toFixed(5)}, ${next.lng.toFixed(5)}`);
   }
 
+  async function runSearch() {
+    const q = searchQuery.trim();
+    if (q.length < 3) {
+      toast.error("Type at least 3 characters to search.");
+      return;
+    }
+    setSearching(true);
+    setSuggestOpen(false);
+    try {
+      // If suggestions are showing, jump straight to the top one.
+      const top = suggestions[0];
+      if (top) {
+        await pickSuggestion(top);
+        return;
+      }
+      const res = await searchPlaces({ data: { query: q } });
+      if (res.results[0]) pickResult(res.results[0]);
+      setSearchResults(res.results);
+      if (!res.results.length) toast.error(res.error ?? "No places found.");
+    } catch {
+      toast.error("Could not search that place. Try again.");
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function pickResult(r: { formattedAddress: string; latitude: number; longitude: number }) {
+    justPickedRef.current = true;
+    setCoords({ lat: r.latitude, lng: r.longitude });
+    setAddress(r.formattedAddress);
+    setSearchResults([]);
+    setSuggestions([]);
+    setSuggestOpen(false);
+    setSearchQuery(r.formattedAddress);
+    setErrors((prev) => {
+      const { location: _omit, ...rest } = prev;
+      return rest;
+    });
+  }
 
   function useCurrentLocation() {
     if (!("geolocation" in navigator)) {
@@ -102,8 +202,7 @@ function PostTaskPage() {
   function validate() {
     const next: FormErrors = {};
     if (name.trim().length < 2) next.name = "Please enter your name";
-    if (!/^[6-9]\d{9}$/.test(phone.trim()))
-      next.phone = "Enter a valid 10-digit Indian mobile number";
+    if (!/^[6-9]\d{9}$/.test(phone.trim())) next.phone = "Enter a valid 10-digit Indian mobile number";
     if (taskName.trim().length < 3) next.taskName = "Give your task a short name";
     if (description.trim().length < 10) next.description = "Add a few more details";
     if (!coords) next.location = "Select your task location";
@@ -165,15 +264,16 @@ function PostTaskPage() {
         <div className="mx-auto max-w-lg px-5 pb-16 pt-12">
           <div className="surface-card rise-in p-6">
             <h1 className="text-2xl font-semibold">Task Posted Successfully 🎉</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Your task has been shared with nearby helpers.
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Your task has been shared with nearby helpers.</p>
 
             <div className="mt-6 space-y-3">
               <Row label="Task ID" value={taskId} />
               <Row label="Task" value={taskName} />
               <Row label="Helpers needed" value={helpers === 4 ? "4 or more" : String(helpers)} />
-              <Row label="When" value={whenNeeded === "schedule" ? `Scheduled: ${scheduledFor}` : whenLabel(whenNeeded)} />
+              <Row
+                label="When"
+                value={whenNeeded === "schedule" ? `Scheduled: ${scheduledFor}` : whenLabel(whenNeeded)}
+              />
               <Row label="Fee" value={`₹${Math.round(Number(fee))} per helper`} />
               <Row label="Location" value={address} />
               <Row label="Status" value="Looking for a helper" />
@@ -204,9 +304,7 @@ function PostTaskPage() {
           ← Need a Hand?
         </Link>
         <h1 className="mt-6 text-3xl font-semibold">Post a task</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Tell us what you need and where. Someone nearby can help.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">Tell us what you need and where. Someone nearby can help.</p>
 
         {step === "form" ? (
           <div className="surface-card rise-in mt-7 space-y-6 p-5">
@@ -276,7 +374,9 @@ function PostTaskPage() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {helpers === 4 ? "4 or more helpers will be assigned" : `${helpers} helper${helpers > 1 ? "s" : ""} will be assigned`}
+                {helpers === 4
+                  ? "4 or more helpers will be assigned"
+                  : `${helpers} helper${helpers > 1 ? "s" : ""} will be assigned`}
               </p>
             </Field>
 
@@ -294,7 +394,9 @@ function PostTaskPage() {
                     }`}
                   >
                     <span className="text-sm font-bold">{opt.label}</span>
-                    <span className={`mt-0.5 text-[10px] ${whenNeeded === opt.value ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                    <span
+                      className={`mt-0.5 text-[10px] ${whenNeeded === opt.value ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+                    >
                       {opt.sub}
                     </span>
                   </button>
@@ -308,15 +410,72 @@ function PostTaskPage() {
                     onChange={(e) => setScheduledFor(e.target.value)}
                     className="h-14 w-full rounded-2xl bg-muted px-4 text-base outline-none focus:ring-2 focus:ring-ring [color-scheme:light]"
                   />
-                  {errors.schedule && (
-                    <p className="mt-2 text-xs font-medium text-destructive">{errors.schedule}</p>
-                  )}
+                  {errors.schedule && <p className="mt-2 text-xs font-medium text-destructive">{errors.schedule}</p>}
                 </div>
               )}
             </Field>
 
             <Field label="Task location" error={errors.location}>
-              <div className="flex gap-2">
+              <div className="relative">
+                <div className="flex gap-2">
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setSuggestOpen(true)}
+                    onBlur={() => setTimeout(() => setSuggestOpen(false), 150)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void runSearch();
+                      }
+                      if (e.key === "Escape") setSuggestOpen(false);
+                    }}
+                    placeholder="Search a place or landmark"
+                    maxLength={200}
+                    autoComplete="off"
+                    className="h-12 flex-1 rounded-2xl bg-muted px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void runSearch()}
+                    disabled={searching}
+                    className="h-12 shrink-0 rounded-2xl bg-secondary px-4 text-sm font-semibold text-secondary-foreground disabled:opacity-60"
+                  >
+                    {searching ? "Searching…" : "Search"}
+                  </button>
+                </div>
+                {suggestOpen && suggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-14 z-30 overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-float)]">
+                    {suggestions.map((s) => (
+                      <button
+                        key={s.placeId}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => void pickSuggestion(s)}
+                        className="block w-full border-b border-border px-4 py-3 text-left last:border-0 hover:bg-muted"
+                      >
+                        <span className="block text-sm font-semibold">{s.primary}</span>
+                        {s.secondary && <span className="block text-xs text-muted-foreground">{s.secondary}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {searchResults.length > 0 && (
+                <div className="mt-2 overflow-hidden rounded-2xl border border-border">
+                  {searchResults.map((r) => (
+                    <button
+                      key={r.formattedAddress}
+                      type="button"
+                      onClick={() => pickResult(r)}
+                      className="block w-full border-b border-border px-4 py-3 text-left text-sm last:border-0 hover:bg-muted"
+                    >
+                      {r.formattedAddress}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 flex gap-2">
                 <button
                   type="button"
                   onClick={useCurrentLocation}
@@ -333,9 +492,7 @@ function PostTaskPage() {
                 <TaskMap value={coords} onChange={(c) => void resolveAddress(c)} />
               </div>
               <p className="mt-2 text-sm text-muted-foreground">
-                {coords
-                  ? address || "Finding address…"
-                  : "Tap or drag the pin to set your exact location."}
+                {coords ? address || "Finding address…" : "Tap or drag the pin to set your exact location."}
               </p>
             </Field>
 
@@ -371,7 +528,8 @@ function PostTaskPage() {
                 ))}
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Total: ₹{Math.round(Number(fee) * helpers)} for {helpers === 4 ? "4+" : helpers} helper{helpers > 1 ? "s" : ""}
+                Total: ₹{Math.round(Number(fee) * helpers)} for {helpers === 4 ? "4+" : helpers} helper
+                {helpers > 1 ? "s" : ""}
               </p>
             </Field>
 
@@ -392,7 +550,10 @@ function PostTaskPage() {
             <div className="mt-5 space-y-3">
               <Row label="Task" value={taskName} />
               <Row label="Helpers" value={helpers === 4 ? "4 or more" : String(helpers)} />
-              <Row label="When" value={whenNeeded === "schedule" ? `Scheduled: ${scheduledFor}` : whenLabel(whenNeeded)} />
+              <Row
+                label="When"
+                value={whenNeeded === "schedule" ? `Scheduled: ${scheduledFor}` : whenLabel(whenNeeded)}
+              />
               <Row label="Location" value={address} />
               <Row label="Fee" value={`₹${Math.round(Number(fee))} per helper`} />
               <Row label="Total" value={`₹${Math.round(Number(fee) * helpers)}`} />
@@ -420,8 +581,7 @@ function PostTaskPage() {
   );
 }
 
-const inputClass =
-  "h-14 w-full rounded-2xl bg-muted px-4 text-base outline-none focus:ring-2 focus:ring-ring";
+const inputClass = "h-14 w-full rounded-2xl bg-muted px-4 text-base outline-none focus:ring-2 focus:ring-ring";
 
 function Field({
   label,

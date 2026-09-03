@@ -22,6 +22,18 @@ export const coordsSchema = z.object({
   longitude: z.number().min(-180).max(180),
 });
 
+export const locationQuerySchema = z.object({
+  query: z.string().trim().min(3).max(200),
+});
+
+export const autocompleteQuerySchema = z.object({
+  query: z.string().trim().min(2).max(200),
+});
+
+export const placeIdSchema = z.object({
+  placeId: z.string().trim().min(3).max(300),
+});
+
 export function makeFallbackTaskId() {
   const n = Math.floor(Math.random() * 999999) + 1;
   return `TASK-${String(n).padStart(6, "0")}`;
