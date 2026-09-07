@@ -88,7 +88,7 @@ export const Route = createRootRouteWithContext<{
       {
         name: "description",
         content:
-          "HELPBE connects people who need small tasks done with trusted helpers nearby. Post a task, find help around you, and get it done.",
+          "HELPBE helps you find nearby people for everyday tasks. Get local help for unloading, moving, errands and more in Ernakulam, Kakkanad and Kochi.",
       },
 
       {
@@ -104,7 +104,7 @@ export const Route = createRootRouteWithContext<{
       {
         property: "og:description",
         content:
-          "Need something done? Post a task and find a nearby helper with HELPBE.",
+          "Need help nearby? Find people in Ernakulam, Kakkanad and Kochi who can help with everyday tasks, unloading, moving and errands.",
       },
 
       {
@@ -135,7 +135,7 @@ export const Route = createRootRouteWithContext<{
       {
         name: "twitter:description",
         content:
-          "Post a task, find a nearby helper, and get it done with HELPBE.",
+          "Find nearby people to help with everyday tasks, unloading, moving and errands in Ernakulam, Kakkanad and Kochi.",
       },
     ],
 
