@@ -73,28 +73,110 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+}>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+
+      {
+        name: "description",
+        content:
+          "HELPBE connects people who need small tasks done with trusted helpers nearby. Post a task, find help around you, and get it done.",
+      },
+
+      {
+        name: "robots",
+        content: "index, follow",
+      },
+
+      {
+        property: "og:title",
+        content: "HELPBE — Get Help From People Nearby",
+      },
+
+      {
+        property: "og:description",
+        content:
+          "Need something done? Post a task and find a nearby helper with HELPBE.",
+      },
+
+      {
+        property: "og:type",
+        content: "website",
+      },
+
+      {
+        property: "og:url",
+        content: "https://helpbe.in",
+      },
+
+      {
+        property: "og:site_name",
+        content: "HELPBE",
+      },
+
+      {
+        name: "twitter:card",
+        content: "summary_large_image",
+      },
+
+      {
+        name: "twitter:title",
+        content: "HELPBE — Get Help From People Nearby",
+      },
+
+      {
+        name: "twitter:description",
+        content:
+          "Post a task, find a nearby helper, and get it done with HELPBE.",
+      },
     ],
+
+    title: "HELPBE — Get Help From People Nearby",
+
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
+        href:
+          "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap",
       },
-      { rel: "icon", href: "/logo-help.png", type: "image/x-icon" },
+
+      {
+        rel: "icon",
+        href: "/helpberoundlogo.png",
+        type: "image/png",
+      },
+
+      {
+        rel: "canonical",
+        href: "https://helpbe.in",
+      },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
