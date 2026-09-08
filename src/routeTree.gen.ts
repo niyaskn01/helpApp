@@ -10,7 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BecomeAHelperRouteImport } from './routes/become-a-helper'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PostRouteImport } from './routes/post'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrackRouteImport } from './routes/track'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +23,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BecomeAHelperRoute = BecomeAHelperRouteImport.update({
+  id: '/become-a-helper',
+  path: '/become-a-helper',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowItWorksRoute = HowItWorksRouteImport.update({
+  id: '/how-it-works',
+  path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostRoute = PostRouteImport.update({
   id: '/post',
   path: '/post',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TrackRoute = TrackRouteImport.update({
@@ -31,31 +61,76 @@ const TrackRoute = TrackRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/become-a-helper': typeof BecomeAHelperRoute
+  '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/post': typeof PostRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/become-a-helper': typeof BecomeAHelperRoute
+  '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/post': typeof PostRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/become-a-helper': typeof BecomeAHelperRoute
+  '/contact': typeof ContactRoute
+  '/how-it-works': typeof HowItWorksRoute
   '/post': typeof PostRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
   '/track': typeof TrackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/post' | '/track'
+  fullPaths:
+    | '/'
+    | '/become-a-helper'
+    | '/contact'
+    | '/how-it-works'
+    | '/post'
+    | '/privacy'
+    | '/terms'
+    | '/track'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/post' | '/track'
-  id: '__root__' | '/' | '/post' | '/track'
+  to:
+    | '/'
+    | '/become-a-helper'
+    | '/contact'
+    | '/how-it-works'
+    | '/post'
+    | '/privacy'
+    | '/terms'
+    | '/track'
+  id:
+    | '__root__'
+    | '/'
+    | '/become-a-helper'
+    | '/contact'
+    | '/how-it-works'
+    | '/post'
+    | '/privacy'
+    | '/terms'
+    | '/track'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BecomeAHelperRoute: typeof BecomeAHelperRoute
+  ContactRoute: typeof ContactRoute
+  HowItWorksRoute: typeof HowItWorksRoute
   PostRoute: typeof PostRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
   TrackRoute: typeof TrackRoute
 }
 
@@ -68,11 +143,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/become-a-helper': {
+      id: '/become-a-helper'
+      path: '/become-a-helper'
+      fullPath: '/become-a-helper'
+      preLoaderRoute: typeof BecomeAHelperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how-it-works': {
+      id: '/how-it-works'
+      path: '/how-it-works'
+      fullPath: '/how-it-works'
+      preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/post': {
       id: '/post'
       path: '/post'
       fullPath: '/post'
       preLoaderRoute: typeof PostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/track': {
@@ -87,7 +197,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BecomeAHelperRoute: BecomeAHelperRoute,
+  ContactRoute: ContactRoute,
+  HowItWorksRoute: HowItWorksRoute,
   PostRoute: PostRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
   TrackRoute: TrackRoute,
 }
 export const routeTree = rootRouteImport
